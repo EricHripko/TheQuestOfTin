@@ -19,7 +19,7 @@ screen.blit(background, (0, 0))
 chars = pygame.sprite.Group()
 
 # Create the protagonist
-tin = AssetSprite("Tin", "StandingRight")
+tin = Tin()
 chars.add(tin)
 
 # Start the game loop with the maximum of 60 frames/sec
