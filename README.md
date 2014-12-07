@@ -7,6 +7,7 @@ Development board
 =============
 Current tasks:
 * Create movement assets for Tin - **Eric**
+* Put an animation subsystem into the effect and test it out on Tin movement animation - **Eric**
 * Come up with a name for the wizard (an evil/dodgy one) - **Jones**
 * Come up with a design for the princess - **Jones**
 * Write down the script for the game (from FB chat) - **Jones**
