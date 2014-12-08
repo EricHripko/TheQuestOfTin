@@ -121,6 +121,38 @@ class AssetSprite(GravitySprite):
         if invalidated:
             self.reload_asset()
 
+
+class LookerSprite(AssetSprite):
+    """
+    Class that defines and manages a looker sprite. This sprite
+    will be tracking the position of the given parent and change
+    its state to either turn right or left based on the situation.
+    """
+    # Parent sprite that this looker will look at
+    parent = None
+
+    def __init__(self, parent, name, initial_state="Default"):
+        """
+        Create and initialise a new asset-based looker sprite.
+        :param parent: Parent sprite that the looker will be focused on.
+        :param name: Asset name.
+        :param initial_state: Initial sprite state.
+        :return: Initialised instance of the sprite.
+        """
+        # Store the link to the parent sprite
+        self.parent = parent
+        # Initialise the asset sprite
+        super().__init__(name, initial_state)
+
+    def update(self):
+        if self.parent.rect.x > self.rect.x:
+            self.set_state("StandingRight")
+        else:
+            self.set_state("StandingLeft")
+        # Base update routine
+        super().update()
+
+
 class Tin(AssetSprite):
     """
     Class that defines and facilitates the management of
@@ -165,7 +197,7 @@ class Tin(AssetSprite):
             self.runLeft.stop()
             self.runRight.play()
             self.rect.x += 5
-        if pressed_keys[pygame.K_SPACE]:
+        if pressed_keys[pygame.K_SPACE] or pressed_keys[pygame.K_UP]:
             # Process jump action on space
             if self.jump < self.jump_limit:
                 self.rect.y -= 10

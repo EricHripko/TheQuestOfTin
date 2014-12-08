@@ -20,7 +20,10 @@ chars = pygame.sprite.Group()
 
 # Create the protagonist
 tin = Tin()
+olivia = LookerSprite(tin, "Olivia", "StandingRight")
+olivia.rect.x = 300
 chars.add(tin)
+chars.add(olivia)
 
 # Start the game loop with the maximum of 60 frames/sec
 running = True
