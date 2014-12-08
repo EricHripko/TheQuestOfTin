@@ -9,7 +9,7 @@ Current tasks:
 * Come up with a name for the wizard (an evil/dodgy one) - **Jones**
 * Write down the script for the game (from FB chat) - **Jones**
 * Come up with ideas of multiple monsters-enemies (5 or so). These should differ in appearance, behaviour and attack/destroy tactics - **Jones**
-* Produce basic landscape assets (background sky with occasional clouds and ground earth level) - **Eric***
+* Produce basic landscape assets (background sky with occasional clouds and ground earth level) - **Eric**
 * Make island hovering platforms that you can stand/jump on - **Eric**
 
 Completed tasks:
