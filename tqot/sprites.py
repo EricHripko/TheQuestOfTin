@@ -2,6 +2,7 @@ import pygame.display
 import pygame.image
 import pygame.key
 import pygame.sprite
+from tqot.animation import *
 
 
 class GravitySprite(pygame.sprite.Sprite):
@@ -126,7 +127,7 @@ class Tin(AssetSprite):
     the game protagonist. Binds game input to the sprite states
     and its movement.
     """
-    # How long the character has been jumping ofr
+    # How long the character has been jumping for
     jump = 0
     # Maximum jump actions in sequence
     jump_limit = 20
@@ -134,6 +135,15 @@ class Tin(AssetSprite):
     def __init__(self):
         # Initialise the asset sprite
         super().__init__("Tin", "StandingRight")
+        # Setup the animations
+        self.runRight = Animation(self)
+        self.runRight.add_frame("StandingRight", 50)
+        self.runRight.add_frame("MovingRight", 50)
+        self.runRight.add_frame("MovingRight2", 50)
+        self.runLeft = Animation(self)
+        self.runLeft.add_frame("StandingLeft", 50)
+        self.runLeft.add_frame("MovingLeft", 50)
+        self.runLeft.add_frame("MovingLeft2", 50)
 
     def reset(self):
         # Reset the jump counter when we hit a surface
@@ -147,16 +157,22 @@ class Tin(AssetSprite):
         # Rotate the sprite based on character's direction
         if pressed_keys[pygame.K_LEFT]:
             # Move left on left key press
-            self.set_state("StandingLeft")
+            self.runRight.stop()
+            self.runLeft.play()
             self.rect.x -= 5
         if pressed_keys[pygame.K_RIGHT]:
             # Move right on right key press
-            self.set_state("StandingRight")
+            self.runLeft.stop()
+            self.runRight.play()
             self.rect.x += 5
         if pressed_keys[pygame.K_SPACE]:
             # Process jump action on space
             if self.jump < self.jump_limit:
                 self.rect.y -= 10
                 self.jump += 1
+        if not pressed_keys[pygame.K_LEFT] and not pressed_keys[pygame.K_RIGHT]:
+            # Stop moving when nothing is pressed
+            self.runLeft.stop()
+            self.runRight.stop()
         # Base update routine
         super().update()
