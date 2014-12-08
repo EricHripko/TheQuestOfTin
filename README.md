@@ -6,6 +6,7 @@ Pixel-art arcade 2D game built on PyGame
 Development board
 =============
 Current tasks:
+* Compe up with multiple platform types (5 or so). These should differ in appearance and the way they interact with the player - **Eric**
 * Come up with a name for the wizard (an evil/dodgy one) - **Jones**
 * Write down the script for the game (from FB chat) - **Jones**
 * Come up with ideas of multiple monsters-enemies (5 or so). These should differ in appearance, behaviour and attack/destroy tactics - **Jones**
