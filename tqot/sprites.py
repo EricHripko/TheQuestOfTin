@@ -35,16 +35,16 @@ class GravitySprite(pygame.sprite.Sprite):
         width = surface.get_width()
         height = surface.get_height()
         # Fix the sprite position
-        if self.rect.left < 0:
-            self.rect.x = 0
+        if self.rect.right < 0:
+            self.rect.x = width - self.rect.width
         if self.rect.top < 0:
             self.rect.y = 0
             self.reset()
         if self.rect.bottom > height - self.ground:
             self.rect.y = height - self.ground - self.rect.height
             self.reset()
-        if self.rect.right > width:
-            self.rect.x = width - self.rect.width
+        if self.rect.left > width:
+            self.rect.x = 0
 
     def reset(self):
         """

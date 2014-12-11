@@ -12,7 +12,7 @@ pygame.display.set_caption("The Quest of Tin")
 
 # Paint temporary background on the display
 background = pygame.Surface(size).convert()
-background.fill((171, 235, 223))
+background.fill((127, 236, 255))
 screen.blit(background, (0, 0))
 
 # Characters to be drawn on the screen
@@ -20,10 +20,9 @@ chars = pygame.sprite.Group()
 
 # Create the protagonist
 tin = Tin()
-olivia = LookerSprite(tin, "Olivia", "StandingRight")
-olivia.rect.x = 300
+# olivia = LookerSprite(tin, "Olivia", "StandingRight")
+# olivia.rect.x = 300
 chars.add(tin)
-chars.add(olivia)
 test = GroundLevel("GroundGrassDirt")
 chars.add(test)
 
