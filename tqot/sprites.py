@@ -14,6 +14,7 @@ class GravitySprite(pygame.sprite.Sprite):
     screen.
     """
     gravity = 0.25
+    ground = 32
     vy = 0
 
     def __init__(self):
@@ -39,8 +40,8 @@ class GravitySprite(pygame.sprite.Sprite):
         if self.rect.top < 0:
             self.rect.y = 0
             self.reset()
-        if self.rect.bottom > height:
-            self.rect.y = height - self.rect.height
+        if self.rect.bottom > height - self.ground:
+            self.rect.y = height - self.ground - self.rect.height
             self.reset()
         if self.rect.right > width:
             self.rect.x = width - self.rect.width
@@ -208,3 +209,51 @@ class Tin(AssetSprite):
             self.runRight.stop()
         # Base update routine
         super().update()
+
+
+class EnvironmentSprite(pygame.sprite.Sprite):
+    """
+    Class that defines and facilitates the management of
+    an asset-based environment sprite. Defines additional
+    properties such as asset name.
+    """
+
+    def __init__(self, name):
+        """
+        Create and initialise a new asset-based sprite.
+        :param name: Asset name.
+        :return: Initialised instance of the sprite.
+        """
+        # Store the asset name
+        self._name = name
+        # Load the associated art asset
+        self.image = pygame.image.load(self.get_asset()).convert_alpha()
+        self.rect = self.image.get_rect()
+        # Initialise the sprite
+        super().__init__()
+
+    def get_asset(self):
+        """
+        Identify the relative path to the assets of the sprite.
+        :return: Path as a string.
+        """
+        return "../assets/" + self._name + ".png"
+
+class GroundLevel(pygame.sprite.Group):
+
+    def __init__(self, name):
+        # Initialise the sprite group
+        super().__init__()
+        # Identify the size of the screen
+        surface = pygame.display.get_surface()
+        width = surface.get_width()
+        height = surface.get_height()
+        # Create and tile the sprites
+        offset = 0
+        while offset < width:
+            # Initialise an environment sprite
+            sprite = EnvironmentSprite(name)
+            sprite.rect.x = offset
+            sprite.rect.y = height - sprite.rect.height
+            offset = sprite.rect.right
+            self.add(sprite)

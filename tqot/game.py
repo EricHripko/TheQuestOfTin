@@ -12,7 +12,7 @@ pygame.display.set_caption("The Quest of Tin")
 
 # Paint temporary background on the display
 background = pygame.Surface(size).convert()
-background.fill((0xCC, 0xCC, 0xCC))
+background.fill((171, 235, 223))
 screen.blit(background, (0, 0))
 
 # Characters to be drawn on the screen
@@ -24,6 +24,8 @@ olivia = LookerSprite(tin, "Olivia", "StandingRight")
 olivia.rect.x = 300
 chars.add(tin)
 chars.add(olivia)
+test = GroundLevel("GroundGrassDirt")
+chars.add(test)
 
 # Start the game loop with the maximum of 60 frames/sec
 running = True
