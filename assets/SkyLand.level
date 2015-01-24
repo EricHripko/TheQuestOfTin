@@ -1,0 +1,18 @@
+$$$ Background color as <Red> <Green> <Blue>
+127 236 255
+$$$ Ground level asset
+GroundGrassDirt
+$$$ Platform definitions as <Symbol> <Asset>
+= PlatformGrass
+~ PlatformCloud
+$$$ Level
+$$$ Block in the middle marks tiles used by the tower
+##########################################
+#                  ~                     #
+#   ~~~~         ######        ~~        #
+#           ~    ######                  #
+#=               ######         =========#
+#                ######                  #
+#   ====         ######                  #
+#           ===  ######                  #
+##########################################

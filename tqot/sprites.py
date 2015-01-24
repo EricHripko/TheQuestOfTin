@@ -13,9 +13,8 @@ class GravitySprite(pygame.sprite.Sprite):
     changed. Also prevents the sprites from going out of the
     screen.
     """
-    gravity = 0.25
+    gravity = 3
     ground = 32
-    vy = 0
 
     def __init__(self):
         """
@@ -46,18 +45,9 @@ class GravitySprite(pygame.sprite.Sprite):
         if self.rect.left > width:
             self.rect.x = 0
 
-    def reset(self):
-        """
-        Reset the build-up of vertical velocity. Occurs when
-        the sprite hits the ground and/or other obstacle that
-        would make it stop in a real world.
-        """
-        self.vy = 0
-
     def update(self):
         # Update the speed and position of the sprite
-        self.vy += self.gravity
-        self.rect.y += self.vy
+        self.rect.y += self.gravity
         # Fix position
         self.check_bounds()
         # Base update routine
@@ -150,8 +140,8 @@ class LookerSprite(AssetSprite):
             self.set_state("StandingRight")
         else:
             self.set_state("StandingLeft")
-        # Base update routine
-        super().update()
+        # Do not do base update routine
+        # super().update()
 
 
 class Tin(AssetSprite):
@@ -160,6 +150,7 @@ class Tin(AssetSprite):
     the game protagonist. Binds game input to the sprite states
     and its movement.
     """
+    ASSET_NAME = "Tin"
     # How long the character has been jumping for
     jump = 0
     # Maximum jump actions in sequence
@@ -167,7 +158,7 @@ class Tin(AssetSprite):
 
     def __init__(self):
         # Initialise the asset sprite
-        super().__init__("Tin", "StandingRight")
+        super().__init__(Tin.ASSET_NAME, "StandingRight")
         # Setup the animations
         self.runRight = Animation(self)
         self.runRight.add_frame("StandingRight", 50)
@@ -178,11 +169,21 @@ class Tin(AssetSprite):
         self.runLeft.add_frame("MovingLeft", 50)
         self.runLeft.add_frame("MovingLeft2", 50)
 
+    def collision(self, sprite):
+        """
+        Method invoked when the character collides with environment.
+        Prevents the character from falling through the platforms.
+        :param sprite: Sprite that character collided with.
+        """
+        # If character is above the platform, prevent falling down
+        if self.rect.bottom - 5 <= sprite.rect.y:
+            if abs(self.rect.bottom - sprite.rect.top) > 2:
+                self.rect.bottom = sprite.rect.top
+            self.reset()
+
     def reset(self):
         # Reset the jump counter when we hit a surface
         self.jump = 0
-        # Base reset routine
-        super().reset()
 
     def update(self):
         # Identify all the keys being currently pressed
@@ -209,51 +210,3 @@ class Tin(AssetSprite):
             self.runRight.stop()
         # Base update routine
         super().update()
-
-
-class EnvironmentSprite(pygame.sprite.Sprite):
-    """
-    Class that defines and facilitates the management of
-    an asset-based environment sprite. Defines additional
-    properties such as asset name.
-    """
-
-    def __init__(self, name):
-        """
-        Create and initialise a new asset-based sprite.
-        :param name: Asset name.
-        :return: Initialised instance of the sprite.
-        """
-        # Store the asset name
-        self._name = name
-        # Load the associated art asset
-        self.image = pygame.image.load(self.get_asset()).convert_alpha()
-        self.rect = self.image.get_rect()
-        # Initialise the sprite
-        super().__init__()
-
-    def get_asset(self):
-        """
-        Identify the relative path to the assets of the sprite.
-        :return: Path as a string.
-        """
-        return "../assets/" + self._name + ".png"
-
-class GroundLevel(pygame.sprite.Group):
-
-    def __init__(self, name):
-        # Initialise the sprite group
-        super().__init__()
-        # Identify the size of the screen
-        surface = pygame.display.get_surface()
-        width = surface.get_width()
-        height = surface.get_height()
-        # Create and tile the sprites
-        offset = 0
-        while offset < width:
-            # Initialise an environment sprite
-            sprite = EnvironmentSprite(name)
-            sprite.rect.x = offset
-            sprite.rect.y = height - sprite.rect.height
-            offset = sprite.rect.right
-            self.add(sprite)

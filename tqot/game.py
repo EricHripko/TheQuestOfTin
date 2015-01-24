@@ -1,30 +1,22 @@
 import pygame
 import pygame.sprite
-from tqot.sprites import *
+from tqot.environment import *
 
 # Initialise the pygame software and hardware layers
 pygame.init()
 
 # Configure the screen
-size = (640, 480)
+size = (1000, 480)
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption("The Quest of Tin")
 
+# Create the game level
+level = Level("SkyLand")
+
 # Paint temporary background on the display
 background = pygame.Surface(size).convert()
-background.fill((127, 236, 255))
+background.fill(level.definition.background)
 screen.blit(background, (0, 0))
-
-# Characters to be drawn on the screen
-chars = pygame.sprite.Group()
-
-# Create the protagonist
-tin = Tin()
-# olivia = LookerSprite(tin, "Olivia", "StandingRight")
-# olivia.rect.x = 300
-chars.add(tin)
-test = GroundLevel("GroundGrassDirt")
-chars.add(test)
 
 # Start the game loop with the maximum of 60 frames/sec
 running = True
@@ -32,14 +24,13 @@ fps = 60
 clock = pygame.time.Clock()
 while running:
     clock.tick(fps)
-
+    # Exit if requested
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-
     # Update in-game objects
-    chars.clear(screen, background)
-    chars.update()
-    chars.draw(screen)
+    level.clear(screen, background)
+    level.update()
+    level.draw(screen)
 
     pygame.display.flip()
