@@ -3,6 +3,7 @@ import pygame.image
 import pygame.key
 import pygame.sprite
 from tqot.animation import *
+from tqot.logic import *
 
 
 class GravitySprite(pygame.sprite.Sprite):
@@ -132,6 +133,8 @@ class LookerSprite(AssetSprite):
         """
         # Store the link to the parent sprite
         self.parent = parent
+        # Remove gravity for the sprite
+        self.gravity = 0
         # Initialise the asset sprite
         super().__init__(name, initial_state)
 
@@ -140,17 +143,49 @@ class LookerSprite(AssetSprite):
             self.set_state("StandingRight")
         else:
             self.set_state("StandingLeft")
-        # Do not do base update routine
-        # super().update()
+        # Base update routine
+        super().update()
 
 
-class Tin(AssetSprite):
+class MonsterAimer(AssetSprite, Damageable):
+    """
+    Class that defines and implements the monster that
+    takes passive tactic: ignoring the player and going
+    for heavy damage to the aim.
+    """
+    ASSET_NAME = "Monster"
+    MAXIMUM_HEALTH = 30
+    SPEED = 1
+    ATTACK_VALUE = 10
+
+    def __init__(self, aim):
+        # Initialise the asset sprite
+        super().__init__(MonsterAimer.ASSET_NAME, "StandingRight")
+        # Remove gravity for the sprite
+        self.gravity = 0
+        # Store the aim of the monster
+        self.aim = aim
+
+    def update(self):
+        # Follow the aim
+        if self.aim.rect.x > self.rect.x:
+            self.rect.x += MonsterAimer.SPEED
+            self.set_state("StandingRight")
+        else:
+            self.rect.x -= MonsterAimer.SPEED
+            self.set_state("StandingLeft")
+        # Base update routine
+        super().update()
+
+class Tin(AssetSprite, Damageable):
     """
     Class that defines and facilitates the management of
     the game protagonist. Binds game input to the sprite states
     and its movement.
     """
     ASSET_NAME = "Tin"
+    MAXIMUM_HEALTH = 30
+    ATTACK_VALUE = 0.1
     # How long the character has been jumping for
     jump = 0
     # Maximum jump actions in sequence
@@ -168,8 +203,19 @@ class Tin(AssetSprite):
         self.runLeft.add_frame("StandingLeft", 50)
         self.runLeft.add_frame("MovingLeft", 50)
         self.runLeft.add_frame("MovingLeft2", 50)
+        self.attackRight = Animation(self)
+        self.attackRight.add_frame("StandingRight", 50)
+        self.attackRight.add_frame("AttackRight", 50)
+        self.attackRight.add_frame("StandingRight", 50)
+        self.attackLeft = Animation(self)
+        self.attackLeft.add_frame("StandingLeft", 50)
+        self.attackLeft.add_frame("AttackLeft", 50)
+        self.attackLeft.add_frame("StandingLeft", 50)
+        # Initialise the logic
+        self.set_health(Tin.MAXIMUM_HEALTH, Tin.MAXIMUM_HEALTH)
+        self.attacking = False
 
-    def collision(self, sprite):
+    def environment_collision(self, sprite):
         """
         Method invoked when the character collides with environment.
         Prevents the character from falling through the platforms.
@@ -181,32 +227,63 @@ class Tin(AssetSprite):
                 self.rect.bottom = sprite.rect.top
             self.reset()
 
+    def character_collision(self, sprite):
+        """
+        Method invoked when the character collides with other characters.
+        Implements attacking action.
+        :param sprite: Sprite that character collided with.
+        """
+        if self.attacking and isinstance(sprite, Damageable):
+            sprite.current -= Tin.ATTACK_VALUE
+
     def reset(self):
         # Reset the jump counter when we hit a surface
         self.jump = 0
 
     def update(self):
+        # Reset the state
+        self.attacking = False
+
         # Identify all the keys being currently pressed
         pressed_keys = pygame.key.get_pressed()
+
         # Rotate the sprite based on character's direction
-        if pressed_keys[pygame.K_LEFT]:
+        if pressed_keys[pygame.K_SPACE]:
+            self.runLeft.stop()
+            self.runRight.stop()
+            # Play either left or right attack animation
+            if self.get_state().endswith("Right"):
+                self.attackRight.play()
+            else:
+                self.attackLeft.play()
+            # Identify that the character is attacking
+            self.attacking = True
+        elif pressed_keys[pygame.K_LEFT]:
             # Move left on left key press
             self.runRight.stop()
+            self.attackLeft.stop()
+            self.attackRight.stop()
             self.runLeft.play()
             self.rect.x -= 5
-        if pressed_keys[pygame.K_RIGHT]:
+        elif pressed_keys[pygame.K_RIGHT]:
             # Move right on right key press
             self.runLeft.stop()
+            self.attackLeft.stop()
+            self.attackRight.stop()
             self.runRight.play()
             self.rect.x += 5
-        if pressed_keys[pygame.K_SPACE] or pressed_keys[pygame.K_UP]:
+        else:
+            # Stop moving when nothing is pressed
+            self.runLeft.stop()
+            self.runRight.stop()
+            self.attackRight.stop()
+            self.attackLeft.stop()
+
+        if pressed_keys[pygame.K_UP]:
             # Process jump action on space
             if self.jump < self.jump_limit:
                 self.rect.y -= 10
                 self.jump += 1
-        if not pressed_keys[pygame.K_LEFT] and not pressed_keys[pygame.K_RIGHT]:
-            # Stop moving when nothing is pressed
-            self.runLeft.stop()
-            self.runRight.stop()
+
         # Base update routine
         super().update()

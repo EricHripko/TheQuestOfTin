@@ -202,37 +202,89 @@ class Platform(EnvironmentSprite):
         self.rect = asset.get_rect()
 
 
-class Tower(EnvironmentSprite):
+class Tower(EnvironmentSprite, Damageable):
     """
     Class that defines and the main tower that the character
     is supposed to protect. Aligns the sprite in the middle
     and tracks the damage levels to change the state accordingly.
     """
     ASSET_NAME = "Tower"
+    STATE_INITIAL = "Initial"
+    STATE_DAMAGED = "Damaged"
+    STATE_RUINED = "Ruined"
+    MAXIMUM_HEALTH = 100
 
     def __init__(self):
         """
         Create a new Tower.
         :return: Tower sprite.
         """
-        # Set the state of the tower to not damaged
-        self.state = "Initial"
-        # Initialise the sprite
-        super().__init__(Tower.ASSET_NAME + '-' + self.state)
+        # Initialise the tower
+        self.state = ""
+        self.set_state(Tower.STATE_INITIAL)
         # Identify the size of the screen
         surface = pygame.display.get_surface()
         width = surface.get_width()
         # Position the tower in the middle vertically
         self.rect.centerx = width / 2
+        # Initialise the logic
+        self.set_health(Tower.MAXIMUM_HEALTH, Tower.MAXIMUM_HEALTH)
+
+    def set_state(self, state):
+        """
+        Update the tower state.
+        :param state: New state.
+        """
+        # Set the state of the tower
+        self.state = state
+        # Reinitialise the sprite
+        super().__init__(Tower.ASSET_NAME + '-' + self.state)
+
+    def update(self):
+        # Identify previous location
+        x = self.rect.x
+        y = self.rect.y
+
+        # Update the state based on current tower health
+        if self.current > self.maximum * 2/3:
+            self.set_state(Tower.STATE_INITIAL)
+        elif self.current > self.maximum * 1/3:
+            self.set_state(Tower.STATE_DAMAGED)
+        else:
+            self.set_state(Tower.STATE_RUINED)
+
+        # Restore previous position
+        self.rect.x = x
+        self.rect.y = y
+
+        # Base update routine
+        super().update()
 
 
 class HealthIndicator(EnvironmentSprite):
     """
+    Class that defines the health indicator for the damageable
+    creature in the game. Tiles the red and black hearts to display
+    the current and maximum health.
     """
     ASSET_NAME = "Life"
     ALT_ASSET_NAME = "Death"
 
-    def __init__(self, current, maximum):
+    def __init__(self, parent):
+        """
+        Create a new health indicator.
+        :param parent: Parent damageable creature.
+        :return: Health indicator sprite.
+        """
+        self.parent = parent
+        self.rect = pygame.Rect(0, 0, 0, 0)
+
+    def set_health(self, current, maximum):
+        """
+        Update the indicator with new creature health.
+        :param current: Current creature health.
+        :param maximum: Maximum creature health.
+        """
         # Initialise the sprite
         super().__init__(HealthIndicator.ALT_ASSET_NAME)
 
@@ -262,8 +314,28 @@ class HealthIndicator(EnvironmentSprite):
         self.image = asset
         self.rect = asset.get_rect()
 
+    def update(self):
+        # Identify previous location
+        x = self.rect.x
+        y = self.rect.y
+
+        # Update creature health
+        self.set_health(self.parent.current, self.parent.maximum)
+
+        # Restore previous position
+        self.rect.x = x
+        self.rect.y = y
+
+        # Base update routine
+        super().update()
+
 
 class Level(pygame.sprite.LayeredUpdates):
+    """
+    Class that defines and manages a game level with all
+    the environment objects, game characters and HUD elements
+    included.
+    """
     # Layer ID for all the environment objects
     ENVIRONMENT = 0
     # Layer ID for the player and all the NPCs
@@ -274,6 +346,11 @@ class Level(pygame.sprite.LayeredUpdates):
     platform_spacing = 64
 
     def __init__(self, name):
+        """
+        Create a new level from the definition file.
+        :param name: Name of the level.
+        :return: Level sprite group.
+        """
         # Initialise the sprite group
         super().__init__()
 
@@ -301,7 +378,8 @@ class Level(pygame.sprite.LayeredUpdates):
         self.add(self.player, layer=Level.CHARACTERS)
 
         # Create player's health indicator in the top right corner
-        self.player_health = HealthIndicator(15, 30)
+        self.player_health = HealthIndicator(self.player)
+        self.player_health.update()
         self.player_health.rect.top = 10
         self.player_health.rect.right = width - 10
         self.add(self.player_health, layer=Level.HUD)
@@ -312,7 +390,8 @@ class Level(pygame.sprite.LayeredUpdates):
         self.add(self.player_icon, layer=Level.HUD)
 
         # Create player's health indicator in the top right corner
-        self.tower_health = HealthIndicator(77, 100)
+        self.tower_health = HealthIndicator(self.tower)
+        self.tower_health.update()
         self.tower_health.rect.top = 10
         self.tower_health.rect.right = self.player_icon.rect.left - 10
         self.add(self.tower_health, layer=Level.HUD)
@@ -321,6 +400,9 @@ class Level(pygame.sprite.LayeredUpdates):
         self.tower_icon.rect.top = 10
         self.tower_icon.rect.right = self.tower_health.rect.left - 5
         self.add(self.tower_icon, layer=Level.HUD)
+
+        self.monster = MonsterAimer(self.player)
+        self.add(self.monster, layer=Level.CHARACTERS)
 
         # Create the platforms
         y = self.ground.get_vertical_rect().top
@@ -334,8 +416,15 @@ class Level(pygame.sprite.LayeredUpdates):
                 self.add(platform, layer=Level.ENVIRONMENT)
 
     def update(self):
+        # Determine environment collisions
         collision_list = pygame.sprite.spritecollide(self.player, self.get_sprites_from_layer(Level.ENVIRONMENT), False)
         if len(collision_list) > 0:
             platform = collision_list[0]
-            self.player.collision(platform)
+            self.player.environment_collision(platform)
+        # Determine character collisions
+        collision_list = pygame.sprite.spritecollide(self.player, self.get_sprites_from_layer(Level.CHARACTERS), False)
+        if len(collision_list) > 0:
+            for character in collision_list:
+                if character != self.player:
+                    self.player.character_collision(character)
         super().update()
