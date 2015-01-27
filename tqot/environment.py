@@ -401,19 +401,28 @@ class Level(pygame.sprite.LayeredUpdates):
         self.tower_icon.rect.right = self.tower_health.rect.left - 5
         self.add(self.tower_icon, layer=Level.HUD)
 
-        self.monster = MonsterAimer(self.player)
-        self.add(self.monster, layer=Level.CHARACTERS)
+        # Create the spawn locations
+        self.spawners = []
 
         # Create the platforms
         y = self.ground.get_vertical_rect().top
+        self.spawners.append(y)
         for line in self.definition.level:
             y -= self.platform_spacing
+            self.spawners.append(y)
             for platform in line:
                 (x, size, name) = platform
                 platform = Platform(name, size)
                 platform.rect.x = (Platform.slot_width - 2*Platform.border) * x + Platform.border
                 platform.rect.y = y
                 self.add(platform, layer=Level.ENVIRONMENT)
+        # Make sure that monsters do not spawn above the top platform level
+        self.spawners.pop()
+
+        # Create spawner manager and start spawning monsters
+        self.spawn_manager = SpawnerManager(self.spawners)
+        self.monsters = []
+        self.create_monster()
 
     def update(self):
         # Determine environment collisions
@@ -425,6 +434,38 @@ class Level(pygame.sprite.LayeredUpdates):
         collision_list = pygame.sprite.spritecollide(self.player, self.get_sprites_from_layer(Level.CHARACTERS), False)
         if len(collision_list) > 0:
             for character in collision_list:
-                if character != self.player:
+                # Can't hurt yourself or your tower
+                if character != self.player and character != self.tower:
                     self.player.character_collision(character)
         super().update()
+
+    def character_dead(self, sprite):
+        """
+        Callback for when the character dies on the screen.
+        :param sprite: Sprite that represents the dead character.
+        """
+        # Remove the dead sprite
+        self.remove(sprite)
+        # Create two monsters instead
+        self.create_monster()
+        self.create_monster()
+
+    def create_monster(self):
+        """
+        Create a new monster at chosen random spawn position.
+        """
+        # Create a monster
+        monster = MonsterAimer(self.tower)
+        monster.character_dead = self.character_dead
+        # Position the monster
+        self.spawn_manager.set_location(monster)
+        # Display the monster
+        self.monsters.append(monster)
+        self.add(monster, layer=Level.CHARACTERS)
+
+    def is_over(self):
+        """
+        Identify whether the game is over or not.
+        :return: True if the tower has fallen and the game is over, false otherwise.
+        """
+        return self.tower.is_dead()

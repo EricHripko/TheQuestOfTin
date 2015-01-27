@@ -154,7 +154,7 @@ class MonsterAimer(AssetSprite, Damageable):
     for heavy damage to the aim.
     """
     ASSET_NAME = "Monster"
-    MAXIMUM_HEALTH = 30
+    MAXIMUM_HEALTH = 5
     SPEED = 1
     ATTACK_VALUE = 10
 
@@ -165,17 +165,36 @@ class MonsterAimer(AssetSprite, Damageable):
         self.gravity = 0
         # Store the aim of the monster
         self.aim = aim
+        # Initialise the logic
+        self.set_health(MonsterAimer.MAXIMUM_HEALTH, MonsterAimer.MAXIMUM_HEALTH)
 
     def update(self):
         # Follow the aim
-        if self.aim.rect.x > self.rect.x:
+        if self.aim.rect.centerx > self.rect.centerx and self.aim.rect.left > self.rect.right and not self.is_dead():
             self.rect.x += MonsterAimer.SPEED
             self.set_state("StandingRight")
-        else:
+        if self.aim.rect.centerx < self.rect.centerx and self.aim.rect.right < self.rect.left and not self.is_dead():
             self.rect.x -= MonsterAimer.SPEED
             self.set_state("StandingLeft")
+        # Reached the target - strike and die
+        if (self.rect.right == self.aim.rect.left or self.rect.left == self.aim.rect.right) and not self.is_dead():
+            self.aim.current -= MonsterAimer.ATTACK_VALUE
+            self.current = -1
+
+        # If dead turn into a cloud of dust and float away
+        if self.is_dead():
+            self.set_state("Dead")
+            self.rect.y -= 1
+
         # Base update routine
         super().update()
+
+    def reset(self):
+        # Out of screen means that we floated away as a cloud
+        if hasattr(self, "character_dead"):
+            self.character_dead(self)
+
+
 
 class Tin(AssetSprite, Damageable):
     """
@@ -235,6 +254,7 @@ class Tin(AssetSprite, Damageable):
         """
         if self.attacking and isinstance(sprite, Damageable):
             sprite.current -= Tin.ATTACK_VALUE
+
 
     def reset(self):
         # Reset the jump counter when we hit a surface
