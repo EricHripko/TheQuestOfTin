@@ -213,6 +213,7 @@ class Tin(AssetSprite, Damageable):
     and its movement.
     """
     ASSET_NAME = "Tin"
+    ALT_ASSET_NAME = "Sin"
     MAXIMUM_HEALTH = 30
     ATTACK_VALUE = 0.1
     # How long the character has been jumping for
@@ -220,9 +221,9 @@ class Tin(AssetSprite, Damageable):
     # Maximum jump actions in sequence
     jump_limit = 20
 
-    def __init__(self):
+    def __init__(self, alt_style = False):
         # Initialise the asset sprite
-        super().__init__(Tin.ASSET_NAME, "StandingRight")
+        super().__init__(Tin.ASSET_NAME if not alt_style else Tin.ALT_ASSET_NAME, "StandingRight")
         # Setup the animations
         self.runRight = Animation(self)
         self.runRight.add_frame("StandingRight", 50)
@@ -243,6 +244,11 @@ class Tin(AssetSprite, Damageable):
         # Initialise the logic
         self.set_health(Tin.MAXIMUM_HEALTH, Tin.MAXIMUM_HEALTH)
         self.attacking = False
+        # Setup the control scheme
+        self.button_attack = pygame.K_RALT if not alt_style else pygame.K_LALT
+        self.button_left = pygame.K_LEFT if not alt_style else pygame.K_a
+        self.button_right = pygame.K_RIGHT if not alt_style else pygame.K_d
+        self.button_top = pygame.K_UP if not alt_style else pygame.K_w
 
     def environment_collision(self, sprite):
         """
@@ -278,7 +284,7 @@ class Tin(AssetSprite, Damageable):
         pressed_keys = pygame.key.get_pressed()
 
         # Rotate the sprite based on character's direction
-        if pressed_keys[pygame.K_SPACE]:
+        if pressed_keys[self.button_attack]:
             self.runLeft.stop()
             self.runRight.stop()
             # Play either left or right attack animation
@@ -288,14 +294,14 @@ class Tin(AssetSprite, Damageable):
                 self.attackLeft.play()
             # Identify that the character is attacking
             self.attacking = True
-        elif pressed_keys[pygame.K_LEFT]:
+        elif pressed_keys[self.button_left]:
             # Move left on left key press
             self.runRight.stop()
             self.attackLeft.stop()
             self.attackRight.stop()
             self.runLeft.play()
             self.rect.x -= 5
-        elif pressed_keys[pygame.K_RIGHT]:
+        elif pressed_keys[self.button_right]:
             # Move right on right key press
             self.runLeft.stop()
             self.attackLeft.stop()
@@ -309,7 +315,7 @@ class Tin(AssetSprite, Damageable):
             self.attackRight.stop()
             self.attackLeft.stop()
 
-        if pressed_keys[pygame.K_UP]:
+        if pressed_keys[self.button_top]:
             # Process jump action on space
             if self.jump < self.jump_limit:
                 self.rect.y -= 10

@@ -1,3 +1,4 @@
+import json
 import pygame.display
 import random
 
@@ -35,6 +36,10 @@ class Damageable:
 
 
 class SpawnerManager:
+    """
+    Class that defines the spawner manager and
+    is able to position the sprites for the game.
+    """
     def __init__(self, heights):
         # Identify and save the size of the screen
         surface = pygame.display.get_surface()
@@ -44,6 +49,10 @@ class SpawnerManager:
         self.heights = heights
 
     def set_location(self, sprite):
+        """
+        Randomise the position for the sprite.
+        :param sprite: Sprite position.
+        """
         # Identify y coordinate
         sprite.rect.y = random.choice(self.heights)
         x = random.getrandbits(1) or self.screen_width
@@ -51,3 +60,24 @@ class SpawnerManager:
             sprite.rect.left = x
         else:
             sprite.rect.right = x
+
+
+def load_scores():
+    """
+    Load the high scores from the file.
+    :return: High scores.
+    """
+    try:
+        with open("scores.json", "r") as file:
+            return json.load(file)
+    except:
+        return []
+
+
+def save_scores(scores):
+    """
+    Save the high scores to the file.
+    :param scores: Maximum scores.
+    """
+    with open("scores.json", "w") as file:
+        json.dump(scores, file)

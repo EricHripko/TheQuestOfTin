@@ -22,6 +22,9 @@ background = pygame.Surface(size).convert()
 background.fill(level.definition.background)
 screen.blit(background, (0, 0))
 
+# Load the scores
+scores = load_scores()
+
 # Start the game loop with the maximum of 60 frames/sec
 running = True
 fps = 60
@@ -38,17 +41,55 @@ while running:
         level.update()
         level.draw(screen)
     else:
-        screen.blit(background, (0, 0))
-        message = "The tower has fallen! You score is " + level.get_pretty_time() +  "!"
+        # Store the high score
+        if not level.multiplayer and (len(scores) == 0 or not level.get_time() in scores):
+            scores.append(level.get_time())
+            scores = list(reversed(sorted(scores)))
+            save_scores(scores)
+
+        if not level.multiplayer:
+            # Display end-game message
+            screen.blit(background, (0, 0))
+            message = "The tower has fallen! Your score is " + level.get_pretty_time() + "!"
+            label = font.render(message, 1, (255, 255, 255))
+            x = (size[0] - label.get_width()) / 2
+            y = (size[1] - label.get_height()) / 2 - 200
+            screen.blit(label, (x, y))
+        else:
+            # Display end-game message
+            screen.blit(background, (0, 0))
+            message = "Sin has won! The darkness grows!" if level.player.is_dead()\
+                                                        else "Tin has won! Nothing escapes the light!"
+            label = font.render(message, 1, (255, 255, 255))
+            x = (size[0] - label.get_width()) / 2
+            y = (size[1] - label.get_height()) / 2 - 200
+            screen.blit(label, (x, y))
+        # Display progress message
+        message = "Press R to retry or M for multi-player :)"
+        label = font.render(message, 1, (255, 255, 255))
+        x = (size[0] - label.get_width()) / 2
+        y = (size[1] - label.get_height()) / 2 - 100
+        screen.blit(label, (x, y))
+        # Display the high scores
+        message = "High scores:"
         label = font.render(message, 1, (255, 255, 255))
         x = (size[0] - label.get_width()) / 2
         y = (size[1] - label.get_height()) / 2
         screen.blit(label, (x, y))
+        for i in range(0, min(3, len(scores))):
+            message = "%d. %02d:%02d" % (i + 1,  (scores[i] // 60), (scores[i] % 60))
+            label = font.render(message, 1, (255, 255, 255))
+            x = (size[0] - label.get_width()) / 2
+            y = (size[1] - label.get_height()) / 2 + 50 * (i + 1)
+            screen.blit(label, (x, y))
 
-        message = "Press any button to retry"
-        label = font.render(message, 1, (255, 255, 255))
-        x = (size[0] - label.get_width()) / 2
-        y = (size[1] - label.get_height()) / 2 + 100
-        screen.blit(label, (x, y))
+        # Restart the level once finished
+        pressed_keys = pygame.key.get_pressed()
+        if pressed_keys[pygame.K_r]:
+            screen.blit(background, (0, 0))
+            level = Level("SkyLand")
+        if pressed_keys[pygame.K_m]:
+            screen.blit(background, (0, 0))
+            level = Level("SkyLand", True)
 
     pygame.display.flip()

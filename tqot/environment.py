@@ -387,7 +387,7 @@ class Level(pygame.sprite.LayeredUpdates):
     # Vertical distance between platforms
     platform_spacing = 64
 
-    def __init__(self, name):
+    def __init__(self, name, multiplayer = False):
         """
         Create a new level from the definition file.
         :param name: Name of the level.
@@ -396,9 +396,13 @@ class Level(pygame.sprite.LayeredUpdates):
         # Initialise the sprite group
         super().__init__()
 
+        # Identify whether this is a multiplayer game
+        self.multiplayer = multiplayer
+
         # Identify the size of the screen
         surface = pygame.display.get_surface()
         width = surface.get_width()
+        height = surface.get_height()
 
         # Read the level
         self.definition = LevelReader(name)
@@ -419,28 +423,61 @@ class Level(pygame.sprite.LayeredUpdates):
         self.add(self.tower, layer=Level.CHARACTERS)
         self.add(self.player, layer=Level.CHARACTERS)
 
-        # Create player's health indicator in the top right corner
-        self.tower_health = HealthIndicator(self.tower)
-        self.tower_health.update()
-        self.tower_health.rect.top = 10
-        self.tower_health.rect.right = width - 10
-        self.add(self.tower_health, layer=Level.HUD)
-        # Create tower's icon in the top right corner
-        self.tower_icon = EnvironmentSprite(Tower.ASSET_NAME + "-Icon")
-        self.tower_icon.rect.top = 10
-        self.tower_icon.rect.right = self.tower_health.rect.left - 5
-        self.add(self.tower_icon, layer=Level.HUD)
+        # Create the enemy
+        if multiplayer:
+            self.player.rect.x += 800
+            self.enemy = Tin(True)
+            self.add(self.enemy, layer=Level.CHARACTERS)
+            self.player.rect.bottom = self.enemy.rect.bottom = height
+
+        if not multiplayer:
+            # Create tower's health indicator in the top right corner
+            self.tower_health = HealthIndicator(self.tower)
+            self.tower_health.update()
+            self.tower_health.rect.top = 10
+            self.tower_health.rect.right = width - 10
+            self.add(self.tower_health, layer=Level.HUD)
+            # Create tower's icon in the top right corner
+            self.tower_icon = EnvironmentSprite(Tower.ASSET_NAME + "-Icon")
+            self.tower_icon.rect.top = 10
+            self.tower_icon.rect.right = self.tower_health.rect.left - 5
+            self.add(self.tower_icon, layer=Level.HUD)
+        else:
+            # Create player's health indicator in the top right corner
+            self.player_health = HealthIndicator(self.player)
+            self.player_health.update()
+            self.player_health.rect.top = 10
+            self.player_health.rect.right = width - 10
+            self.add(self.player_health, layer=Level.HUD)
+            # Create player's icon in the top right corner
+            self.player_icon = EnvironmentSprite(Tin.ASSET_NAME + "-Icon")
+            self.player_icon.rect.top = 10
+            self.player_icon.rect.right = self.player_health.rect.left - 5
+            self.add(self.player_icon, layer=Level.HUD)
 
         # Display the time icon in the top left corner
-        self.time_icon = EnvironmentSprite("Time")
-        self.time_icon.rect.left = 10
-        self.time_icon.rect.top = 10
-        self.add(self.time_icon, layer=Level.HUD)
-        # Display the time in the top left corner
-        self.time_indicator = TimeIndicator()
-        self.time_indicator.rect.left = self.time_icon.rect.right + 5
-        self.time_indicator.rect.top = 10
-        self.add(self.time_indicator, layer=Level.HUD)
+        if not multiplayer:
+            self.time_icon = EnvironmentSprite("Time")
+            self.time_icon.rect.left = 10
+            self.time_icon.rect.top = 10
+            self.add(self.time_icon, layer=Level.HUD)
+            # Display the time in the top left corner
+            self.time_indicator = TimeIndicator()
+            self.time_indicator.rect.left = self.time_icon.rect.right + 5
+            self.time_indicator.rect.top = 10
+            self.add(self.time_indicator, layer=Level.HUD)
+        else:
+            # Create player's icon in the top right corner
+            self.enemy_icon = EnvironmentSprite(Tin.ALT_ASSET_NAME + "-Icon")
+            self.enemy_icon.rect.top = 10
+            self.enemy_icon.rect.left = 10
+            self.add(self.enemy_icon, layer=Level.HUD)
+            # Create player's health indicator in the top right corner
+            self.enemy_health = HealthIndicator(self.enemy)
+            self.enemy_health.update()
+            self.enemy_health.rect.top = 10
+            self.enemy_health.rect.left = self.enemy_icon.rect.right + 5
+            self.add(self.enemy_health, layer=Level.HUD)
 
         # Create the spawn locations
         self.spawners = []
@@ -460,14 +497,15 @@ class Level(pygame.sprite.LayeredUpdates):
         # Make sure that monsters do not spawn above the top platform level
         self.spawners.pop()
 
-        # Create spawner manager and start spawning monsters
-        self.spawn_manager = SpawnerManager(self.spawners)
-        self.monsters = []
-        self.create_monster()
+        if not multiplayer:
+            # Create spawner manager and start spawning monsters
+            self.spawn_manager = SpawnerManager(self.spawners)
+            self.monsters = []
+            self.create_monster()
 
-        # Record the time when the game has begun
-        self.start = time.time()
-        self.end = time.time()
+            # Record the time when the game has begun
+            self.start = time.time()
+            self.end = time.time()
 
     def update(self):
         # Determine environment collisions
@@ -482,10 +520,24 @@ class Level(pygame.sprite.LayeredUpdates):
                 # Can't hurt yourself or your tower
                 if character != self.player and character != self.tower:
                     self.player.character_collision(character)
+        if self.multiplayer:
+            # Determine environment collisions
+            collision_list = pygame.sprite.spritecollide(self.enemy, self.get_sprites_from_layer(Level.ENVIRONMENT), False)
+            if len(collision_list) > 0:
+                platform = collision_list[0]
+                self.enemy.environment_collision(platform)
+            # Determine character collisions
+            collision_list = pygame.sprite.spritecollide(self.enemy, self.get_sprites_from_layer(Level.CHARACTERS), False)
+            if len(collision_list) > 0:
+                for character in collision_list:
+                    # Can't hurt yourself or your tower
+                    if character != self.enemy and character != self.tower:
+                        self.enemy.character_collision(character)
 
-        # Update the game time and its indicator
-        self.end = time.time()
-        self.time_indicator.time = self.get_pretty_time()
+        if not self.multiplayer:
+            # Update the game time and its indicator
+            self.end = time.time()
+            self.time_indicator.time = self.get_pretty_time()
 
         # Base update routine
         super().update()
@@ -548,4 +600,6 @@ class Level(pygame.sprite.LayeredUpdates):
         Identify whether the game is over or not.
         :return: True if the tower has fallen and the game is over, false otherwise.
         """
+        if self.multiplayer:
+            return self.enemy.is_dead() or self.player.is_dead()
         return self.tower.is_dead()
