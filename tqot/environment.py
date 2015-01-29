@@ -1,5 +1,7 @@
+import math
 import pygame
 import pygame.sprite
+import time
 from tqot.sprites import *
 
 
@@ -330,6 +332,46 @@ class HealthIndicator(EnvironmentSprite):
         super().update()
 
 
+class TimeIndicator(pygame.sprite.Sprite):
+    """
+    Class that defines the time indicator for the game. Identifies
+    how long the play has survived trough the game.
+    """
+
+    def __init__(self):
+        """
+        Create a new time indicator.
+        :return: Time indicator sprite.
+        """
+        # Initialise the sprite
+        super().__init__()
+
+        # Create the font for the current time
+        self.font = pygame.font.SysFont("Helvetica", 16)
+        self.color = (255, 255, 255)
+        # Create a dummy sprite outline
+        self.image = None
+        self.rect = pygame.Rect(0, 0, 0, 0)
+
+        # Initially zero seconds have passed
+        self.time = 0
+
+    def update(self):
+        # Store old coordinates
+        x = self.rect.x
+        y = self.rect.y
+
+        # Re-render the changed time
+        label = self.font.render(self.time, 0, self.color)
+        self.image = label.convert_alpha()
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+        # Base update routine
+        super().update()
+
+
 class Level(pygame.sprite.LayeredUpdates):
     """
     Class that defines and manages a game level with all
@@ -378,28 +420,27 @@ class Level(pygame.sprite.LayeredUpdates):
         self.add(self.player, layer=Level.CHARACTERS)
 
         # Create player's health indicator in the top right corner
-        self.player_health = HealthIndicator(self.player)
-        self.player_health.update()
-        self.player_health.rect.top = 10
-        self.player_health.rect.right = width - 10
-        self.add(self.player_health, layer=Level.HUD)
-        # Create player's icon in the top right corner
-        self.player_icon = EnvironmentSprite(Tin.ASSET_NAME + "-Icon")
-        self.player_icon.rect.top = 10
-        self.player_icon.rect.right = self.player_health.rect.left
-        self.add(self.player_icon, layer=Level.HUD)
-
-        # Create player's health indicator in the top right corner
         self.tower_health = HealthIndicator(self.tower)
         self.tower_health.update()
         self.tower_health.rect.top = 10
-        self.tower_health.rect.right = self.player_icon.rect.left - 10
+        self.tower_health.rect.right = width - 10
         self.add(self.tower_health, layer=Level.HUD)
         # Create tower's icon in the top right corner
         self.tower_icon = EnvironmentSprite(Tower.ASSET_NAME + "-Icon")
         self.tower_icon.rect.top = 10
         self.tower_icon.rect.right = self.tower_health.rect.left - 5
         self.add(self.tower_icon, layer=Level.HUD)
+
+        # Display the time icon in the top left corner
+        self.time_icon = EnvironmentSprite("Time")
+        self.time_icon.rect.left = 10
+        self.time_icon.rect.top = 10
+        self.add(self.time_icon, layer=Level.HUD)
+        # Display the time in the top left corner
+        self.time_indicator = TimeIndicator()
+        self.time_indicator.rect.left = self.time_icon.rect.right + 5
+        self.time_indicator.rect.top = 10
+        self.add(self.time_indicator, layer=Level.HUD)
 
         # Create the spawn locations
         self.spawners = []
@@ -424,6 +465,10 @@ class Level(pygame.sprite.LayeredUpdates):
         self.monsters = []
         self.create_monster()
 
+        # Record the time when the game has begun
+        self.start = time.time()
+        self.end = time.time()
+
     def update(self):
         # Determine environment collisions
         collision_list = pygame.sprite.spritecollide(self.player, self.get_sprites_from_layer(Level.ENVIRONMENT), False)
@@ -437,6 +482,12 @@ class Level(pygame.sprite.LayeredUpdates):
                 # Can't hurt yourself or your tower
                 if character != self.player and character != self.tower:
                     self.player.character_collision(character)
+
+        # Update the game time and its indicator
+        self.end = time.time()
+        self.time_indicator.time = self.get_pretty_time()
+
+        # Base update routine
         super().update()
 
     def character_dead(self, sprite):
@@ -446,9 +497,10 @@ class Level(pygame.sprite.LayeredUpdates):
         """
         # Remove the dead sprite
         self.remove(sprite)
-        # Create two monsters instead
-        self.create_monster()
-        self.create_monster()
+        self.monsters.remove(sprite)
+        # Create new monsters instead
+        while len(self.monsters) < self.get_monsters_count():
+            self.create_monster()
 
     def create_monster(self):
         """
@@ -462,6 +514,34 @@ class Level(pygame.sprite.LayeredUpdates):
         # Display the monster
         self.monsters.append(monster)
         self.add(monster, layer=Level.CHARACTERS)
+
+    def get_time(self):
+        """
+        How long the player lasted on this level.
+        :return: Total time played in seconds.
+        """
+        return int(self.end - self.start)
+
+    def get_pretty_time(self):
+        """
+        How long the player lasted on this level.
+        :return: Total time player as a string formatted MM:SS.
+        """
+        # Identify current time
+        current = self.get_time()
+        # Break it down and create a time string
+        mins = current / 60
+        secs = current % 60
+        return "%02d:%02d" % (mins, secs)
+
+    def get_monsters_count(self):
+        """
+        Identify the required number of active monsters.
+        Every 20 seconds another monster is added
+        on top.
+        :return: Number of monsters.
+        """
+        return self.get_time() // 20 + 1
 
     def is_over(self):
         """

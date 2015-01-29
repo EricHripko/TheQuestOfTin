@@ -154,31 +154,42 @@ class MonsterAimer(AssetSprite, Damageable):
     for heavy damage to the aim.
     """
     ASSET_NAME = "Monster"
+    ALT_ASSET_NAME = "Stinger"
     MAXIMUM_HEALTH = 5
+    ALT_MAXIMUM_HEALTH = 1
     SPEED = 1
+    ALT_SPEED = 2
     ATTACK_VALUE = 10
+    ALT_ATTACK_VALUE = 2
 
     def __init__(self, aim):
+        # Identify the monster type
+        type = random.choice([True, False])
+
         # Initialise the asset sprite
-        super().__init__(MonsterAimer.ASSET_NAME, "StandingRight")
+        super().__init__(MonsterAimer.ASSET_NAME if type else MonsterAimer.ALT_ASSET_NAME, "StandingRight")
         # Remove gravity for the sprite
         self.gravity = 0
         # Store the aim of the monster
         self.aim = aim
         # Initialise the logic
-        self.set_health(MonsterAimer.MAXIMUM_HEALTH, MonsterAimer.MAXIMUM_HEALTH)
+        health = MonsterAimer.MAXIMUM_HEALTH if type else MonsterAimer.ALT_MAXIMUM_HEALTH
+        self.speed = MonsterAimer.SPEED if type else MonsterAimer.ALT_SPEED
+        self.attack = MonsterAimer.ATTACK_VALUE if type else MonsterAimer.ALT_ATTACK_VALUE
+        self.set_health(health, health)
 
     def update(self):
         # Follow the aim
         if self.aim.rect.centerx > self.rect.centerx and self.aim.rect.left > self.rect.right and not self.is_dead():
-            self.rect.x += MonsterAimer.SPEED
+            self.rect.x += self.speed
             self.set_state("StandingRight")
         if self.aim.rect.centerx < self.rect.centerx and self.aim.rect.right < self.rect.left and not self.is_dead():
-            self.rect.x -= MonsterAimer.SPEED
+            self.rect.x -= self.speed
             self.set_state("StandingLeft")
+
         # Reached the target - strike and die
         if (self.rect.right == self.aim.rect.left or self.rect.left == self.aim.rect.right) and not self.is_dead():
-            self.aim.current -= MonsterAimer.ATTACK_VALUE
+            self.aim.current -= self.attack
             self.current = -1
 
         # If dead turn into a cloud of dust and float away
@@ -193,7 +204,6 @@ class MonsterAimer(AssetSprite, Damageable):
         # Out of screen means that we floated away as a cloud
         if hasattr(self, "character_dead"):
             self.character_dead(self)
-
 
 
 class Tin(AssetSprite, Damageable):
