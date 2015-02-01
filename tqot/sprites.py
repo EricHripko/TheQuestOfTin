@@ -245,7 +245,7 @@ class Tin(AssetSprite, Damageable):
         self.set_health(Tin.MAXIMUM_HEALTH, Tin.MAXIMUM_HEALTH)
         self.attacking = False
         # Setup the control scheme
-        self.button_attack = pygame.K_RALT if not alt_style else pygame.K_LALT
+        self.button_attack = pygame.K_RALT if not alt_style else pygame.K_LCTRL
         self.button_left = pygame.K_LEFT if not alt_style else pygame.K_a
         self.button_right = pygame.K_RIGHT if not alt_style else pygame.K_d
         self.button_top = pygame.K_UP if not alt_style else pygame.K_w
